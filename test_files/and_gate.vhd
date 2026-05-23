@@ -9,7 +9,9 @@ entity and_gate is
     );
 end entity and_gate;
 
-architecture dataflow of and_gate is
+architecture dataflow of and_gate is-- line comment in line
 begin
     z <= a and b;
 end architecture dataflow;
+-- test line comment
+/**/
