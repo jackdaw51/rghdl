@@ -1,10 +1,6 @@
 // Let's make this shi allocation free
 
-use std::{
-    iter::Peekable,
-    ops::{AddAssign, Index},
-    str::Chars,
-};
+use std::{iter::Peekable, str::Chars};
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Token {
@@ -101,7 +97,8 @@ impl<'a> Lexer<'a> {
                 'a'..='z' | 'A'..='Z' | '0'..='9' => self.lex_identifier_or_keyword(start_pos),
                 ':' | '<' => self.lex_two_char(start_pos),
                 '-' => self.lex_minus_or_comment(start_pos),
-                ';' | '.' | '(' | ')' => self.single_digit(start_pos),
+                ';' | '.' | '(' | ')' | ','| '=' => self.single_digit(start_pos),
+                '\'' => self.lex_tick_or_char_lit(start_pos),
                 _ => self.lex_unknown(start_pos),
             }
         } else {
@@ -209,7 +206,6 @@ impl<'a> Lexer<'a> {
             return self.error(start_pos);
         };
 
-        println!("{first_c}");
         let Some(second_c) = iter_clone else {
             return self.error(start_pos);
         };
@@ -255,11 +251,28 @@ impl<'a> Lexer<'a> {
                 ';' => TokenKind::Semicolon,
                 '(' => TokenKind::LParen,
                 ')' => TokenKind::RParen,
-                ':' => TokenKind::Semicolon,
                 '<' => TokenKind::OpLt,
+                '>' => TokenKind::OpGt,
+                '=' => TokenKind::OpEq,
+                ':' => TokenKind::Colon,
                 _ => unreachable!(),
             }
         }
         Token::new(t, Span::new(start_pos, self.current_pos))
+    }
+
+    fn lex_tick_or_char_lit(&mut self, start_pos: usize) -> Token {
+        let Some(cloned_char) = self.chars.clone().skip(2).next() else {
+            return self.error(start_pos);
+        };
+        match cloned_char {
+            '\'' => {
+                self.advance();
+                self.advance();
+                self.advance();
+                Token::new(TokenKind::CharLit, Span::new(start_pos, self.current_pos))
+            }
+            _ => todo!(),
+        }
     }
 }

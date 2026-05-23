@@ -1,11 +1,14 @@
 use std::fs;
 
-use crate::lexer::{Lexer, Token, TokenKind};
+use crate::lexer::{Lexer, TokenKind};
 
 pub(crate) mod lexer;
 
 fn main() {
-    let source_string = fs::read_to_string("test_files/and_gate.vhd").expect("Not found");
+    // let source_string = fs::read_to_string("test_files/and_gate.vhd").expect("Not found");
+    // let source_string = fs::read_to_string("test_files/custom_types_pkg.vhd").expect("Not found");
+    let source_string = fs::read_to_string("test_files/latch_inference.vhd").expect("Not found");
+    // let source_string = fs::read_to_string("test_files/param_mux.vhd").expect("Not found");
 
     let mut lexer = Lexer::new(&source_string);
 
