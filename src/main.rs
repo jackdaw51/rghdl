@@ -12,6 +12,7 @@ fn main() {
 
     let mut lexer = Lexer::new(&source_string);
 
+
     loop {
         let token = lexer.next_token();
 

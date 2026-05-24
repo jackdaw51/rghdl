@@ -15,6 +15,8 @@ begin
     begin
         if enable = '1' then
             data_out <= data_in;
+            "This is a string literal"
+            x"FFFF"
             -- The absence of an 'else' clause forces latch inference.
             -- Excellent validation check for your semantic analyzer.
         end if;

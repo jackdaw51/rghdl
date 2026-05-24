@@ -57,6 +57,8 @@ pub enum TokenKind {
     OpGt,                // >
     OpGeq,               // >=
     OpBox,               // <> (Unconstrained range)
+    OpPlus,              // +
+    OpMinus,             // -
     Colon,               // :
     Semicolon,           // ;
     Comma,               // ,
@@ -94,12 +96,13 @@ impl<'a> Lexer<'a> {
         if let Some(&ch) = self.chars.peek() {
             print!("{ch} ");
             match ch {
-                'a'..='z' | 'A'..='Z' | '0'..='9' => self.lex_identifier_or_keyword(start_pos),
-                ':' | '<' => self.lex_two_char(start_pos),
-                '-' => self.lex_minus_or_comment(start_pos),
-                ';' | '.' | '(' | ')' | ','| '=' => self.single_digit(start_pos),
-                '\'' => self.lex_tick_or_char_lit(start_pos),
-                _ => self.lex_unknown(start_pos),
+                'a'..='z' | 'A'..='Z' => self.identifier_or_keyword(start_pos),
+                '0'..='9' => self.number(start_pos),
+                ':' | '<' => self.two_char(start_pos),
+                ';' | '.' | '(' | ')' | ',' | '=' | '+' | '-' => self.single_digit(start_pos),
+                '"' => self.string_lit(start_pos),
+                '\'' => self.tick_or_char_lit(start_pos),
+                _ => self.unknown(start_pos),
             }
         } else {
             Token {
@@ -173,18 +176,47 @@ impl<'a> Lexer<'a> {
             self.advance();
         }
     }
-    fn lex_identifier_or_keyword(&mut self, start_pos: usize) -> Token {
+
+    fn identifier_or_keyword(&mut self, start_pos: usize) -> Token {
+        let mut one_more = self.chars.clone();
+        // Disallows __
+        one_more.next();
         while let Some(c) = self.chars.peek() {
             match c {
                 'a'..='z' | 'A'..='Z' | '_' | '0'..='9' => {
+                    //TODO: Panics if no final semicolon
+                    let a = one_more.next().unwrap();
+                    // println!("{},{}",c,a);
+                    if a == '_' && c == &'_' {
+                        return self.error(start_pos);
+                    }
+                    if a == '"' && (c == &'b' || c == &'x') {
+                        return self.bitstring_lit(start_pos);
+                    }
                     self.advance();
                 }
                 _ => break,
             }
         }
 
-        let a = match &self.source[start_pos..self.current_pos] {
+        let s = self.source[start_pos..self.current_pos].to_lowercase();
+
+        let a = match s.as_str() {
             "library" => TokenKind::KwLibrary,
+            "entity" => TokenKind::KwEntity,
+            "architecture" => TokenKind::KwArchitecture,
+            "package" => TokenKind::KwPackage,
+            "is" => TokenKind::KwIs,
+            "port" => TokenKind::KwPort,
+            "generic" => TokenKind::KwGeneric,
+            "begin" => TokenKind::KwBegin,
+            "end" => TokenKind::KwEnd,
+            "process" => TokenKind::KwProcess,
+            "if" => TokenKind::KwIf,
+            "then" => TokenKind::KwThen,
+            "else" => TokenKind::KwElse,
+            "use" => TokenKind::KwUse,
+            "all" => TokenKind::KwAll,
             _ => TokenKind::Identifier,
         };
 
@@ -194,11 +226,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn lex_number(&self, start_pos: usize) -> Token {
-        todo!()
-    }
-
-    fn lex_two_char(&mut self, start_pos: usize) -> Token {
+    fn two_char(&mut self, start_pos: usize) -> Token {
         let t;
         let iter_clone = self.chars.clone().skip(1).next();
 
@@ -234,12 +262,8 @@ impl<'a> Lexer<'a> {
         Token::new(TokenKind::Error, Span::new(start_pos, self.current_pos))
     }
 
-    fn lex_minus_or_comment(&self, start_pos: usize) -> Token {
-        todo!()
-    }
-
-    fn lex_unknown(&self, start_pos: usize) -> Token {
-        todo!()
+    fn unknown(&self, start_pos: usize) -> Token {
+        panic!("At {}", start_pos);
     }
 
     fn single_digit(&mut self, start_pos: usize) -> Token {
@@ -255,13 +279,15 @@ impl<'a> Lexer<'a> {
                 '>' => TokenKind::OpGt,
                 '=' => TokenKind::OpEq,
                 ':' => TokenKind::Colon,
+                '+' => TokenKind::OpPlus,
+                '-' => TokenKind::OpMinus,
                 _ => unreachable!(),
             }
         }
         Token::new(t, Span::new(start_pos, self.current_pos))
     }
 
-    fn lex_tick_or_char_lit(&mut self, start_pos: usize) -> Token {
+    fn tick_or_char_lit(&mut self, start_pos: usize) -> Token {
         let Some(cloned_char) = self.chars.clone().skip(2).next() else {
             return self.error(start_pos);
         };
@@ -272,7 +298,122 @@ impl<'a> Lexer<'a> {
                 self.advance();
                 Token::new(TokenKind::CharLit, Span::new(start_pos, self.current_pos))
             }
-            _ => todo!(),
+            _ => {
+                self.advance();
+                Token::new(TokenKind::Tick, Span::new(start_pos, self.current_pos))
+            }
         }
+    }
+
+    fn consume_decimal_digits(&mut self) {
+        while let Some(&ch) = self.chars.peek() {
+            if ch.is_ascii_digit() || ch == '_' {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+    }
+
+    /// Consumes hex digits (0-9, A-F, a-f) and underscores for based numbers
+    fn consume_hex_digits(&mut self) {
+        while let Some(&ch) = self.chars.peek() {
+            if ch.is_ascii_hexdigit() || ch == '_' {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+    }
+
+    fn number(&mut self, start_pos: usize) -> Token {
+        self.consume_decimal_digits();
+
+        // based number (16#FF#)
+        if let Some(&'#') = self.chars.peek() {
+            self.advance();
+            self.consume_hex_digits();
+
+            if let Some(&'#') = self.chars.peek() {
+                self.advance();
+            }
+        }
+        // real number
+        else if let Some(&'.') = self.chars.peek() {
+            let mut lookahead = self.chars.clone();
+            lookahead.next();
+
+            if let Some(next_ch) = lookahead.next() {
+                if next_ch.is_ascii_digit() {
+                    self.advance();
+                    self.consume_decimal_digits();
+                }
+            }
+        }
+        if let Some(&ch) = self.chars.peek() {
+            if ch == 'e' || ch == 'E' {
+                let mut lookahead = self.chars.clone();
+                lookahead.next();
+
+                let next_ch = lookahead.next();
+
+                let is_valid_exp = match next_ch {
+                    Some('+') | Some('-') => lookahead.next().map_or(false, |c| c.is_ascii_digit()),
+                    Some(c) if c.is_ascii_digit() => true,
+                    _ => false,
+                };
+
+                if is_valid_exp {
+                    self.advance();
+
+                    if let Some(&sign) = self.chars.peek() {
+                        if sign == '+' || sign == '-' {
+                            self.advance();
+                        }
+                    }
+
+                    self.consume_decimal_digits();
+                }
+            }
+        }
+
+        Token {
+            kind: TokenKind::Number,
+            span: Span {
+                start: start_pos,
+                end: self.current_pos,
+            },
+        }
+    }
+
+    fn string_lit(&mut self, start_pos: usize) -> Token {
+        let mut t: TokenKind = TokenKind::Error;
+        self.advance();
+        while let Some(x) = self.chars.peek() {
+            if x == &'"' {
+                t = TokenKind::StringLit;
+                self.advance();
+                break;
+            }
+            self.advance();
+        }
+
+        Token::new(t, Span::new(start_pos, self.current_pos))
+    }
+
+    fn bitstring_lit(&mut self, start_pos: usize) -> Token {
+        let mut t: TokenKind = TokenKind::Error;
+        self.advance();
+        self.advance();
+        while let Some(x) = self.chars.peek() {
+            if x == &'"' {
+                t = TokenKind::BitStringLit;
+                self.advance();
+                break;
+            }
+            self.advance();
+        }
+
+        Token::new(t, Span::new(start_pos, self.current_pos))
     }
 }
