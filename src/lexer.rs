@@ -71,6 +71,24 @@ pub enum TokenKind {
     Error,
 }
 
+const KEYWORDS: &[(&str, TokenKind)] = &[
+    ("library", TokenKind::KwLibrary),
+    ("entity", TokenKind::KwEntity),
+    ("architecture", TokenKind::KwArchitecture),
+    ("package", TokenKind::KwPackage),
+    ("is", TokenKind::KwIs),
+    ("port", TokenKind::KwPort),
+    ("generic", TokenKind::KwGeneric),
+    ("begin", TokenKind::KwBegin),
+    ("end", TokenKind::KwEnd),
+    ("process", TokenKind::KwProcess),
+    ("if", TokenKind::KwIf),
+    ("then", TokenKind::KwThen),
+    ("else", TokenKind::KwElse),
+    ("use", TokenKind::KwUse),
+    ("all", TokenKind::KwAll),
+];
+
 pub struct Lexer<'a> {
     source: &'a str,
     chars: Peekable<Chars<'a>>,
@@ -199,26 +217,14 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        let s = self.source[start_pos..self.current_pos].to_lowercase();
+        let s = &self.source[start_pos..self.current_pos];
 
-        let a = match s.as_str() {
-            "library" => TokenKind::KwLibrary,
-            "entity" => TokenKind::KwEntity,
-            "architecture" => TokenKind::KwArchitecture,
-            "package" => TokenKind::KwPackage,
-            "is" => TokenKind::KwIs,
-            "port" => TokenKind::KwPort,
-            "generic" => TokenKind::KwGeneric,
-            "begin" => TokenKind::KwBegin,
-            "end" => TokenKind::KwEnd,
-            "process" => TokenKind::KwProcess,
-            "if" => TokenKind::KwIf,
-            "then" => TokenKind::KwThen,
-            "else" => TokenKind::KwElse,
-            "use" => TokenKind::KwUse,
-            "all" => TokenKind::KwAll,
-            _ => TokenKind::Identifier,
-        };
+        //Safe to unwrap here
+        let a = KEYWORDS
+            .iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case(&s))
+            .map(|(_, tk)| tk.clone())
+            .unwrap_or(TokenKind::Identifier);
 
         Token {
             kind: a,
