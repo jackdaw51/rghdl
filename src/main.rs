@@ -3,6 +3,7 @@ use std::fs;
 use crate::lexer::{Lexer, TokenKind};
 
 pub(crate) mod lexer;
+mod parser;
 
 fn main() {
     // let source_string = fs::read_to_string("test_files/and_gate.vhd").expect("Not found");

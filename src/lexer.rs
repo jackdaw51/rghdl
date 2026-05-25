@@ -3,7 +3,7 @@
 use std::{iter::Peekable, str::Chars};
 
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct Token {
+pub struct Token {
     pub kind: TokenKind,
     pub span: Span,
 }
@@ -421,5 +421,17 @@ impl<'a> Lexer<'a> {
         }
 
         Token::new(t, Span::new(start_pos, self.current_pos))
+    }
+}
+impl<'a> Iterator for Lexer<'a> {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let token = self.next_token();
+        if token.kind == TokenKind::Eof {
+            None
+        } else {
+            Some(token)
+        }
     }
 }
