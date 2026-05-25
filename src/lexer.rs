@@ -202,9 +202,9 @@ impl<'a> Lexer<'a> {
         while let Some(c) = self.chars.peek() {
             match c {
                 'a'..='z' | 'A'..='Z' | '_' | '0'..='9' => {
-                    //TODO: Panics if no final semicolon
-                    let a = one_more.next().unwrap();
-                    // println!("{},{}",c,a);
+                    let Some(a) = one_more.next() else {
+                        return self.error(start_pos);
+                    };
                     if a == '_' && c == &'_' {
                         return self.error(start_pos);
                     }
