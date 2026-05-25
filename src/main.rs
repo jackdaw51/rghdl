@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::lexer::{Lexer, TokenKind};
+use crate::{lexer::{Lexer, TokenKind}, parser::Parser};
 
 pub(crate) mod lexer;
 mod parser;
@@ -11,16 +11,18 @@ fn main() {
     let source_string = fs::read_to_string("test_files/latch_inference.vhd").expect("Not found");
     // let source_string = fs::read_to_string("test_files/param_mux.vhd").expect("Not found");
 
-    let mut lexer = Lexer::new(&source_string);
+    // let mut lexer = Lexer::new(&source_string);
 
+    let mut parser= Parser::new(&source_string);
 
     loop {
-        let token = lexer.next_token();
+        // let token = lexer.next_token();
 
-        println!("{:?}", token);
+        // println!("{:?}", token);
 
-        if token.kind == TokenKind::Eof {
-            break;
-        }
+        // if token.kind == TokenKind::Eof {
+        //     break;
+        // }
+        parser.parse();
     }
 }

@@ -47,6 +47,13 @@ pub enum TokenKind {
     KwLibrary,
     KwUse,
     KwAll,
+    KwIn,
+    KwOut,
+    KwInOut,
+    KwBuffer,
+    KwOf,
+    KwSignal,
+    KwConstant,
 
     OpAssign,            // :=
     OpArrow,             // => (Port mapping)
@@ -87,6 +94,13 @@ const KEYWORDS: &[(&str, TokenKind)] = &[
     ("else", TokenKind::KwElse),
     ("use", TokenKind::KwUse),
     ("all", TokenKind::KwAll),
+    ("in",TokenKind::KwIn),
+    ("out",TokenKind::KwOut),
+    ("inout",TokenKind::KwInOut),
+    ("buffer",TokenKind::KwBuffer),
+    ("of",TokenKind::KwOf),
+    ("signal",TokenKind::KwSignal),
+    ("constant",TokenKind::KwConstant),
 ];
 
 pub struct Lexer<'a> {
@@ -104,7 +118,6 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    /// The main method called by the Parser
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace_and_comments();
 
@@ -112,7 +125,6 @@ impl<'a> Lexer<'a> {
 
         // Peek at the next character to determine the token type
         if let Some(&ch) = self.chars.peek() {
-            print!("{ch} ");
             match ch {
                 'a'..='z' | 'A'..='Z' => self.identifier_or_keyword(start_pos),
                 '0'..='9' => self.number(start_pos),
@@ -187,8 +199,8 @@ impl<'a> Lexer<'a> {
         while let Some(_) = self.chars.peek() {
             let remaining = &self.source[self.current_pos..];
             if remaining.starts_with("*/") {
-                self.advance(); // Eat '*'
-                self.advance(); // Eat '/'
+                self.advance(); 
+                self.advance(); 
                 break;
             }
             self.advance();
@@ -219,7 +231,6 @@ impl<'a> Lexer<'a> {
 
         let s = &self.source[start_pos..self.current_pos];
 
-        //Safe to unwrap here
         let a = KEYWORDS
             .iter()
             .find(|(k, _)| k.eq_ignore_ascii_case(&s))
