@@ -190,7 +190,7 @@ impl<'a> Lexer<'a> {
                     if a == '_' && c == &'_' {
                         return self.error(start_pos);
                     }
-                    if a == '"' && (c == &'b' || c == &'x') {
+                    if a == '"' && (c == &'b' || c == &'x' || c == &'B' || c == &'X') {
                         return self.bitstring_lit(start_pos);
                     }
                     self.advance();
