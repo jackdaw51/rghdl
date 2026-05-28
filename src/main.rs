@@ -1,7 +1,11 @@
 use std::fs;
 
-use crate::{lexer::{Lexer, TokenKind}, parser::Parser};
+use crate::{
+    lexer::{Lexer, TokenKind},
+    parser::Parser,
+};
 
+pub(crate) mod ast;
 pub(crate) mod lexer;
 mod parser;
 
@@ -13,16 +17,17 @@ fn main() {
 
     // let mut lexer = Lexer::new(&source_string);
 
-    let mut parser= Parser::new(&source_string);
+    let mut parser = Parser::new(&source_string);
+    parser.parse();
+    println!("{}", parser.arena);
 
-    loop {
-        // let token = lexer.next_token();
+    // loop {
+    // let token = lexer.next_token();
 
-        // println!("{:?}", token);
+    // println!("{:?}", token);
 
-        // if token.kind == TokenKind::Eof {
-        //     break;
-        // }
-        parser.parse();
-    }
+    // if token.kind == TokenKind::Eof {
+    //     break;
+    // }
+    // }
 }

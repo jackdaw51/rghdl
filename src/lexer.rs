@@ -94,13 +94,13 @@ const KEYWORDS: &[(&str, TokenKind)] = &[
     ("else", TokenKind::KwElse),
     ("use", TokenKind::KwUse),
     ("all", TokenKind::KwAll),
-    ("in",TokenKind::KwIn),
-    ("out",TokenKind::KwOut),
-    ("inout",TokenKind::KwInOut),
-    ("buffer",TokenKind::KwBuffer),
-    ("of",TokenKind::KwOf),
-    ("signal",TokenKind::KwSignal),
-    ("constant",TokenKind::KwConstant),
+    ("in", TokenKind::KwIn),
+    ("out", TokenKind::KwOut),
+    ("inout", TokenKind::KwInOut),
+    ("buffer", TokenKind::KwBuffer),
+    ("of", TokenKind::KwOf),
+    ("signal", TokenKind::KwSignal),
+    ("constant", TokenKind::KwConstant),
 ];
 
 pub struct Lexer<'a> {
@@ -199,8 +199,8 @@ impl<'a> Lexer<'a> {
         while let Some(_) = self.chars.peek() {
             let remaining = &self.source[self.current_pos..];
             if remaining.starts_with("*/") {
-                self.advance(); 
-                self.advance(); 
+                self.advance();
+                self.advance();
                 break;
             }
             self.advance();
